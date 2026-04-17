@@ -1,0 +1,113 @@
+.focus-container {
+  position: relative;
+  display: flex;
+  gap: 1em;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  outline: none;
+  user-select: none;
+}
+
+.focus-word {
+  position: relative;
+  font-size: 3rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition:
+    filter 0.3s ease,
+    color 0.3s ease;
+  outline: none;
+  user-select: none;
+}
+
+.focus-word.active {
+  filter: blur(0);
+}
+
+.focus-frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  box-sizing: content-box;
+  border: none;
+}
+
+.corner {
+  position: absolute;
+  width: 1rem;
+  height: 1rem;
+  border: 3px solid var(--border-color, #fff);
+  filter: drop-shadow(0px 0px 4px var(--border-color, #fff));
+  border-radius: 3px;
+  transition: none;
+}
+
+.top-left {
+  top: -10px;
+  left: -10px;
+  border-right: none;
+  border-bottom: none;
+}
+
+.top-right {
+  top: -10px;
+  right: -10px;
+  border-left: none;
+  border-bottom: none;
+}
+
+.bottom-left {
+  bottom: -10px;
+  left: -10px;
+  border-right: none;
+  border-top: none;
+}
+
+.bottom-right {
+  bottom: -10px;
+  right: -10px;
+  border-left: none;
+  border-top: none;
+}
+.focus-container {
+  position: relative;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+}
+
+.focus-word {
+  font-weight: 900;
+  font-size: 1.6rem;
+  letter-spacing: -1px;
+  cursor: default;
+  position: relative;
+  z-index: 1;
+  color: #fff;
+}
+
+.focus-frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: 2px solid var(--border-color);
+  background-color: transparent;
+  box-shadow: 0 0 15px var(--glow-color);
+  pointer-events: none;
+  border-radius: 4px;
+}
+
+.corner {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border: 2px solid var(--border-color);
+}
+
+.top-left { top: -4px; left: -4px; border-right: none; border-bottom: none; }
+.top-right { top: -4px; right: -4px; border-left: none; border-bottom: none; }
+.bottom-left { bottom: -4px; left: -4px; border-right: none; border-top: none; }
+.bottom-right { bottom: -4px; right: -4px; border-left: none; border-top: none; }
