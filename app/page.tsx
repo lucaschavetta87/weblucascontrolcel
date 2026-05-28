@@ -83,6 +83,9 @@ export default function WebControlCell() {
   const [vista, setVista] = useState<'inicio' | 'catalogo'>('inicio');
   const [productosBase, setProductosBase] = useState<Producto[]>([]);
   const [categoriaActiva, setCategoriaActiva] = useState<'todos' | 'celulares' | 'accesorios'>('todos');
+  
+  // --- NUEVO ESTADO PARA EL BUSCADOR INTELIGENTE ---
+  const [busquedaTermino, setBusquedaTermino] = useState('');
 
   // --- CONEXIÓN Y CARGA DE STOCK DESDE SUPABASE ---
   const cargarProductosNube = async () => {
@@ -114,11 +117,19 @@ export default function WebControlCell() {
     cargarProductosNube();
   }, []);
 
-  // --- FILTRADO FILTRADO DINÁMICO ---
+  // --- FILTRADO DINÁMICO COMBINADO (CATEGORÍA + BUSCADOR INTELIGENTE) ---
   const productosFiltrados = useMemo(() => {
-    if (categoriaActiva === 'todos') return productosBase;
-    return productosBase.filter(p => p.categoria === categoriaActiva);
-  }, [productosBase, categoriaActiva]);
+    return productosBase.filter(p => {
+      // 1. Validar Filtro de Categoría
+      const pasaCategoria = categoriaActiva === 'todos' || p.categoria === categoriaActiva;
+      
+      // 2. Validar Filtro de Texto (Buscador)
+      const terminoClean = busquedaTermino.toLowerCase().trim();
+      const pasaBusqueda = p.nombre.toLowerCase().includes(terminoClean);
+
+      return pasaCategoria && pasaBusqueda;
+    });
+  }, [productosBase, categoriaActiva, busquedaTermino]);
 
   // --- LOGICA ORIGINAL DE CONSULTA DE REPARACIÓN CORREGIDA ---
   const buscarEstado = async () => {
@@ -350,6 +361,31 @@ export default function WebControlCell() {
               Catálogo de <span style={{ color: azulModerno }}>Artículos</span>
             </h2>
 
+            {/* --- CUADRO DE BÚSQUEDA INTELIGENTE NUEVO --- */}
+            <div style={{ maxWidth: '500px', margin: '0 auto 30px', padding: '0 10px' }}>
+              <input 
+                type="text" 
+                placeholder="🔍 Buscar por nombre (ej: Cable, Cargador...)" 
+                value={busquedaTermino}
+                onChange={(e) => setBusquedaTermino(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '16px 20px',
+                  borderRadius: '20px',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  backgroundColor: 'rgba(255,255,255,0.06)',
+                  color: '#fff',
+                  fontSize: '1rem',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+                }}
+                onFocus={(e) => e.currentTarget.style.borderColor = azulModerno}
+                onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'}
+              />
+            </div>
+
             {/* TABS DE FILTRADO */}
             <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '40px', flexWrap: 'wrap' }}>
               <button onClick={() => setCategoriaActiva('todos')} style={estiloTab('todos')}>Todos</button>
@@ -359,7 +395,7 @@ export default function WebControlCell() {
 
             {productosFiltrados.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '80px 20px', opacity: 0.5, fontSize: '1.1rem', border: '1px dashed rgba(255,255,255,0.15)', borderRadius: '24px', backgroundColor: 'rgba(0,0,0,0.3)' }}>
-                No hay stock disponible en esta categoría en este momento.
+                {busquedaTermino ? 'No se encontraron artículos que coincidan con tu búsqueda.' : 'No hay stock disponible en esta categoría en este momento.'}
               </div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '30px' }}>
