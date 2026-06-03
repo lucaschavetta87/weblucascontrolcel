@@ -7,7 +7,7 @@ import TrueFocus from '../components/TrueFocus';
 import BlurText from '../components/BlurText'; 
 import { supabase } from '../lib/supabase';
 import WhatsAppChat from '../components/WhatsAppChat';
-import { FaInstagram, FaTiktok, FaWhatsapp } from 'react-icons/fa';
+import { FaInstagram, FaTiktok, FaWhatsapp, FaShoppingCart, FaTimes, FaPlus, FaMinus, FaCheckCircle } from 'react-icons/fa';
 
 // --- INTERFACES ---
 interface Producto {
@@ -30,6 +30,12 @@ interface ServiceItemProps {
   title: string;
   icon: string;
   desc: string;
+}
+
+// --- NUEVA INTERFAZ PARA EL CARRITO ---
+interface ItemCarrito {
+  producto: Producto;
+  cantidad: number;
 }
 
 // --- COMPONENTE DE SERVICIOS PULIDO ---
@@ -93,16 +99,20 @@ export default function WebControlCell() {
   const [cargando, setCargando] = useState(false);
   const [errorBusqueda, setErrorBusqueda] = useState('');
 
-  // --- NUEVOS ESTADOS DE CONTROL DE CATÁLOGO ---
   const [vista, setVista] = useState<'inicio' | 'catalogo'>('inicio');
   const [productosBase, setProductosBase] = useState<Producto[]>([]);
   const [categoriaActiva, setCategoriaActiva] = useState<'todos' | 'celulares' | 'accesorios'>('todos');
-  
-  // --- NUEVO ESTADO PARA EL BUSCADOR INTELIGENTE ---
   const [busquedaTermino, setBusquedaTermino] = useState('');
-
-  // --- ESTADO AUXILIAR PARA HOVERS DINÁMICOS DE PRODUCTOS ---
   const [hoveredProductId, setHoveredProductId] = useState<number | null>(null);
+
+  // --- ESTADOS DE CARRITO ---
+  const [carrito, setCarrito] = useState<ItemCarrito[]>([]);
+  const [mostrarCarrito, setMostrarCarrito] = useState(false);
+  const [notificacion, setNotificacion] = useState<string | null>(null);
+
+  // --- NUEVOS ESTADOS PARA LA PAGINACIÓN ---
+  const [paginaActual, setPaginaActual] = useState(1);
+  const productosPorPagina = 8;
 
   // --- CONEXIÓN Y CARGA DE STOCK DESDE SUPABASE ---
   const cargarProductosNube = async () => {
@@ -144,6 +154,20 @@ export default function WebControlCell() {
     });
   }, [productosBase, categoriaActiva, busquedaTermino]);
 
+  // Regresar a la primera página automáticamente si cambia el filtro o el término de búsqueda
+  useEffect(() => {
+    setPaginaActual(1);
+  }, [categoriaActiva, busquedaTermino]);
+
+  // --- LÓGICA DE PAGINACIÓN ---
+  const productosPaginados = useMemo(() => {
+    const inicio = (paginaActual - 1) * productosPorPagina;
+    const fin = inicio + productosPorPagina;
+    return productosFiltrados.slice(inicio, fin);
+  }, [productosFiltrados, paginaActual]);
+
+  const totalPaginas = Math.ceil(productosFiltrados.length / productosPorPagina);
+
   // --- LÓGICA DE CONSULTA DE REPARACIÓN ---
   const buscarEstado = async () => {
     if (!ordenBusqueda || !telBusqueda) {
@@ -181,8 +205,50 @@ export default function WebControlCell() {
     setCargando(false);
   };
 
-  const enviarWhatsAppCatalogo = (nombreProd: string, precioProd: number) => {
-    const mensaje = `Hola ControlCel! Me interesa consultar por el artículo: *${nombreProd}* publicado a *$${precioProd.toLocaleString('es-AR')}*. ¿Tienen disponibilidad?`;
+  // --- LÓGICA DEL CARRITO CON CARTEL ---
+  const agregarAlCarrito = (producto: Producto) => {
+    setCarrito(prev => {
+      const existe = prev.find(item => item.producto.id === producto.id);
+      if (existe) {
+        return prev.map(item => item.producto.id === producto.id ? { ...item, cantidad: item.cantidad + 1 } : item);
+      }
+      return [...prev, { producto, cantidad: 1 }];
+    });
+
+    setNotificacion("Producto añadido al carrito correctamente");
+  };
+
+  useEffect(() => {
+    if (notificacion) {
+      const timer = setTimeout(() => {
+        setNotificacion(null);
+      }, 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [notificacion]);
+
+  const modificarCantidad = (id: number, delta: number) => {
+    setCarrito(prev => {
+      return prev.map(item => {
+        if (item.producto.id === id) {
+          const nuevaCantidad = item.cantidad + delta;
+          return { ...item, cantidad: nuevaCantidad > 0 ? nuevaCantidad : 0 };
+        }
+        return item;
+      }).filter(item => item.cantidad > 0);
+    });
+  };
+
+  const totalCarrito = carrito.reduce((acc, item) => acc + (item.producto.precio * item.cantidad), 0);
+  const cantidadTotal = carrito.reduce((acc, item) => acc + item.cantidad, 0);
+
+  const finalizarCompraWhatsApp = () => {
+    if (carrito.length === 0) return;
+    let mensaje = `Hola ControlCel! Te paso mi pedido:\n\n`;
+    carrito.forEach(item => {
+      mensaje += `- ${item.cantidad}x ${item.producto.nombre} ($${(item.producto.precio * item.cantidad).toLocaleString('es-AR')})\n`;
+    });
+    mensaje += `\n*Total: $${totalCarrito.toLocaleString('es-AR')}*\n\n¿Tienen disponibilidad para armar el pedido?`;
     window.open(`https://wa.me/5492614603074?text=${encodeURIComponent(mensaje)}`, '_blank');
   };
 
@@ -247,13 +313,13 @@ export default function WebControlCell() {
                 transition: 'all 0.3s ease'
               }}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = vista === 'catalogo' ? azulModerno : 'rgba(255,255,255,0.12)'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = vista === 'catalogo' ? azulModerno : 'rgba(255,255,255,0.05)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = vista === 'catalogo' ? vista === 'catalogo' ? azulModerno : 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.05)'}
             >
               {vista === 'inicio' ? '📱 CATÁLOGO' : '🏠 INICIO'}
             </button>
           </div>
 
-          <div onClick={() => setVista('inicio')} style={{ cursor: 'pointer' }}>
+          <div onClick={() => setVista('inicio')} style={{ cursor: 'pointer', position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
             <TrueFocus 
               sentence="CONTROL CEL" 
               blurAmount={5} 
@@ -263,7 +329,38 @@ export default function WebControlCell() {
               pauseBetweenAnimations={1} 
             />
           </div>
-          <div style={{ width: '105px', display: 'none' }}></div>
+
+          {/* BOTÓN CARRITO EN NAVBAR */}
+          {vista === 'catalogo' && (
+            <div style={{ position: 'relative' }}>
+              <button 
+                onClick={() => setMostrarCarrito(true)}
+                style={{ 
+                  backgroundColor: 'rgba(255,255,255,0.1)', 
+                  border: '1px solid rgba(255,255,255,0.2)', 
+                  color: '#fff', 
+                  padding: '10px 20px', 
+                  borderRadius: '12px', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '10px', 
+                  cursor: 'pointer',
+                  transition: 'all 0.3s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)'}
+              >
+                <FaShoppingCart size={18} />
+                <span style={{ fontWeight: 'bold' }}>Carrito</span>
+              </button>
+              {cantidadTotal > 0 && (
+                <div style={{ position: 'absolute', top: '-8px', right: '-8px', backgroundColor: '#ef4444', color: '#fff', fontSize: '0.75rem', fontWeight: 'bold', width: '22px', height: '22px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.5)' }}>
+                  {cantidadTotal}
+                </div>
+              )}
+            </div>
+          )}
+          {vista === 'inicio' && <div style={{ width: '105px' }}></div>}
         </nav>
 
         {/* REDES SOCIALES FLOTANTES */}
@@ -404,77 +501,115 @@ export default function WebControlCell() {
                 {busquedaTermino ? 'No se encontraron artículos que coincidan con tu búsqueda.' : 'No hay stock disponible en esta categoría en este momento.'}
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '30px' }}>
-                {productosFiltrados.map((p) => {
-                  const isCardHovered = hoveredProductId === p.id;
-                  return (
-                    <div 
-                      key={p.id} 
-                      onMouseEnter={() => setHoveredProductId(p.id)}
-                      onMouseLeave={() => setHoveredProductId(null)}
-                      style={{ 
-                        backgroundColor: 'rgba(255, 255, 255, 0.03)', 
-                        backdropFilter: 'blur(20px)', 
-                        borderRadius: '24px', 
-                        overflow: 'hidden', 
-                        border: isCardHovered ? `1px solid ${azulModerno}` : '1px solid rgba(255,255,255,0.08)', 
-                        display: 'flex', 
-                        flexDirection: 'column', 
-                        justifyContent: 'space-between', 
-                        transform: isCardHovered ? 'scale(1.04) translateY(-5px)' : 'scale(1) translateY(0)',
-                        boxShadow: isCardHovered ? `0 15px 30px rgba(59, 130, 246, 0.2)` : 'none',
-                        transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)' 
-                      }}
-                    >
-                      <div style={{ width: '100%', height: '200px', overflow: 'hidden' }}>
-                        <img 
-                          src={p.img} 
-                          alt={p.nombre} 
-                          style={{ 
-                            width: '100%', 
-                            height: '100%', 
-                            objectFit: 'cover', 
-                            borderBottom: '1px solid rgba(255,255,255,0.05)',
-                            transform: isCardHovered ? 'scale(1.08)' : 'scale(1)',
-                            transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
-                          }} 
-                        />
-                      </div>
-                      <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                        <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '700', height: '42px', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: '1.4', color: '#fff' }}>{p.nombre}</h4>
-                        
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                          <span style={{ color: azulModerno, fontWeight: '800', fontSize: '1.4rem' }}>${p.precio.toLocaleString('es-AR')}</span>
-                          <button 
-                            onClick={() => enviarWhatsAppCatalogo(p.nombre, p.precio)}
+              <>
+                {/* GRILLA CON PRODUCTOS PAGINADOS */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '30px' }}>
+                  {productosPaginados.map((p) => {
+                    const isCardHovered = hoveredProductId === p.id;
+                    return (
+                      <div 
+                        key={p.id} 
+                        onMouseEnter={() => setHoveredProductId(p.id)}
+                        onMouseLeave={() => setHoveredProductId(null)}
+                        style={{ 
+                          backgroundColor: 'rgba(255, 255, 255, 0.03)', 
+                          backdropFilter: 'blur(20px)', 
+                          borderRadius: '24px', 
+                          overflow: 'hidden', 
+                          border: isCardHovered ? `1px solid ${azulModerno}` : '1px solid rgba(255,255,255,0.08)', 
+                          display: 'flex', 
+                          flexDirection: 'column', 
+                          justifyContent: 'space-between', 
+                          transform: isCardHovered ? 'scale(1.04) translateY(-5px)' : 'scale(1) translateY(0)',
+                          boxShadow: isCardHovered ? `0 15px 30px rgba(59, 130, 246, 0.2)` : 'none',
+                          transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)' 
+                        }}
+                      >
+                        <div style={{ width: '100%', height: '200px', overflow: 'hidden' }}>
+                          <img 
+                            src={p.img} 
+                            alt={p.nombre} 
                             style={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              justifyContent: 'center', 
-                              gap: '8px', 
                               width: '100%', 
-                              padding: '12px', 
-                              borderRadius: '12px', 
-                              border: 'none', 
-                              backgroundColor: '#25d366', 
-                              color: '#fff', 
-                              fontWeight: 'bold', 
-                              cursor: 'pointer', 
-                              fontSize: '0.85rem', 
-                              transition: 'all 0.3s ease',
-                              boxShadow: isCardHovered ? '0 4px 15px rgba(37, 211, 102, 0.4)' : 'none'
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#20ba5a'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#25d366'}
-                          >
-                            <FaWhatsapp size={16} /> CONSULTAR STOCK
-                          </button>
+                              height: '100%', 
+                              objectFit: 'cover', 
+                              borderBottom: '1px solid rgba(255,255,255,0.05)',
+                              transform: isCardHovered ? 'scale(1.08)' : 'scale(1)',
+                              transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
+                            }} 
+                          />
+                        </div>
+                        <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                          <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '700', height: '42px', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: '1.4', color: '#fff' }}>{p.nombre}</h4>
+                          
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            <span style={{ color: azulModerno, fontWeight: '800', fontSize: '1.4rem' }}>${p.precio.toLocaleString('es-AR')}</span>
+                            <button 
+                              onClick={() => agregarAlCarrito(p)}
+                              style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'center', 
+                                gap: '8px', 
+                                width: '100%', 
+                                padding: '12px', 
+                                borderRadius: '12px', 
+                                border: 'none', 
+                                backgroundColor: azulModerno, 
+                                color: '#fff', 
+                                fontWeight: 'bold', 
+                                cursor: 'pointer', 
+                                fontSize: '0.85rem', 
+                                transition: 'all 0.3s ease',
+                                boxShadow: isCardHovered ? `0 4px 15px ${azulModerno}60` : 'none'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
+                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = azulModerno}
+                            >
+                              <FaShoppingCart size={16} /> AGREGAR AL CARRITO
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+
+                {/* CONTROLES DE PAGINACIÓN */}
+                {totalPaginas > 1 && (
+                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', marginTop: '40px' }}>
+                    {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((num) => {
+                      const esActiva = paginaActual === num;
+                      return (
+                        <button
+                          key={num}
+                          onClick={() => setPaginaActual(num)}
+                          style={{
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '50%',
+                            border: `1px solid ${esActiva ? azulModerno : 'rgba(255,255,255,0.1)'}`,
+                            backgroundColor: esActiva ? azulModerno : 'rgba(255,255,255,0.05)',
+                            color: '#fff',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease',
+                            boxShadow: esActiva ? `0 0 10px ${azulModerno}50` : 'none',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!esActiva) e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.15)';
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!esActiva) e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)';
+                          }}
+                        >
+                          {num}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
             )}
           </section>
         )}
@@ -507,6 +642,120 @@ export default function WebControlCell() {
           © 2026 ControlCel - Mendoza
         </footer>
       </div>
+
+      {/* --- SIDEBAR DEL CARRITO --- */}
+      {mostrarCarrito && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 4000, display: 'flex', justifyContent: 'flex-end' }}>
+          {/* Overlay oscuro */}
+          <div 
+            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)', cursor: 'pointer' }} 
+            onClick={() => setMostrarCarrito(false)}
+          ></div>
+          
+          {/* Panel del carrito */}
+          <div style={{ position: 'relative', width: '100%', maxWidth: '400px', height: '100%', backgroundColor: '#0f172a', borderLeft: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', boxShadow: '-10px 0 30px rgba(0,0,0,0.5)', zIndex: 4001 }}>
+            
+            <div style={{ padding: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <FaShoppingCart color={azulModerno} /> Mi Pedido
+              </h3>
+              <button 
+                onClick={() => setMostrarCarrito(false)}
+                style={{ backgroundColor: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', opacity: 0.7 }}
+                onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                onMouseLeave={(e) => e.currentTarget.style.opacity = '0.7'}
+              >
+                <FaTimes size={20} />
+              </button>
+            </div>
+
+            <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              {carrito.length === 0 ? (
+                <div style={{ textAlign: 'center', opacity: 0.5, marginTop: '40px' }}>
+                  El carrito está vacío.
+                </div>
+              ) : (
+                carrito.map((item) => (
+                  <div key={item.producto.id} style={{ display: 'flex', gap: '15px', backgroundColor: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '15px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <img src={item.producto.img} alt={item.producto.nombre} style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '10px' }} />
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <div style={{ fontSize: '0.9rem', fontWeight: 'bold', lineHeight: '1.2' }}>{item.producto.nombre}</div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
+                        <span style={{ color: azulModerno, fontWeight: 'bold' }}>${(item.producto.precio * item.cantidad).toLocaleString('es-AR')}</span>
+                        
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: '8px', padding: '4px' }}>
+                          <button onClick={() => modificarCantidad(item.producto.id, -1)} style={{ backgroundColor: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', padding: '4px' }}><FaMinus size={10} /></button>
+                          <span style={{ fontSize: '0.85rem', width: '15px', textAlign: 'center' }}>{item.cantidad}</span>
+                          <button onClick={() => modificarCantidad(item.producto.id, 1)} style={{ backgroundColor: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', padding: '4px' }}><FaPlus size={10} /></button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {carrito.length > 0 && (
+              <div style={{ padding: '20px', borderTop: '1px solid rgba(255,255,255,0.1)', backgroundColor: 'rgba(0,0,0,0.2)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', fontSize: '1.2rem', fontWeight: 'bold' }}>
+                  <span>Total:</span>
+                  <span style={{ color: azulModerno }}>${totalCarrito.toLocaleString('es-AR')}</span>
+                </div>
+                <button 
+                  onClick={finalizarCompraWhatsApp}
+                  style={{ 
+                    width: '100%', 
+                    backgroundColor: '#25d366', 
+                    color: '#fff', 
+                    padding: '16px', 
+                    borderRadius: '15px', 
+                    border: 'none', 
+                    fontWeight: 'bold', 
+                    fontSize: '1rem', 
+                    display: 'flex', 
+                    justifyContent: 'center', 
+                    alignItems: 'center', 
+                    gap: '10px', 
+                    cursor: 'pointer',
+                    transition: 'all 0.3s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#20ba5a'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#25d366'}
+                >
+                  <FaWhatsapp size={20} /> FINALIZAR POR WHATSAPP
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* --- CARTEL FLOTANTE (TOAST NOTIFICACIÓN) --- */}
+      {notificacion && (
+        <div style={{
+          position: 'fixed',
+          top: '95px',
+          right: '25px',
+          backgroundColor: 'rgba(15, 23, 42, 0.85)',
+          backdropFilter: 'blur(15px)',
+          border: `1px solid ${azulModerno}`,
+          borderRadius: '16px',
+          padding: '12px 24px',
+          color: '#fff',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          zIndex: 5000,
+          boxShadow: `0 10px 25px rgba(59, 130, 246, 0.25)`,
+          animation: 'fadeIn 0.3s ease-out',
+          fontWeight: '600',
+          fontSize: '0.9rem'
+        }}>
+          <FaCheckCircle color="#10b981" size={18} />
+          {notificacion}
+        </div>
+      )}
+
     </div>
   );
 }
