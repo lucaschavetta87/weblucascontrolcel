@@ -281,87 +281,159 @@ export default function WebControlCell() {
 
       <div style={{ position: 'relative', zIndex: 1 }}>
         
-        {/* NAVBAR */}
-        <nav style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
-          padding: '0 5%', 
-          backgroundColor: 'rgba(0,0,0,0.6)', 
-          backdropFilter: 'blur(20px)', 
-          position: 'sticky', 
-          top: 0, 
-          zIndex: 100, 
-          borderBottom: '1px solid rgba(255,255,255,0.08)', 
-          height: '80px', 
-          boxSizing: 'border-box' 
-        }}>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button 
-              onClick={() => setVista(vista === 'inicio' ? 'catalogo' : 'inicio')}
-              style={{
-                backgroundColor: vista === 'catalogo' ? azulModerno : 'rgba(255,255,255,0.05)',
-                color: '#fff',
-                border: `1px solid ${vista === 'catalogo' ? azulModerno : 'rgba(255,255,255,0.15)'}`,
-                padding: '8px 18px',
-                borderRadius: '12px',
-                fontWeight: '800',
-                fontSize: '0.8rem',
-                cursor: 'pointer',
-                letterSpacing: '1.5px',
-                textTransform: 'uppercase',
-                transition: 'all 0.3s ease'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = vista === 'catalogo' ? azulModerno : 'rgba(255,255,255,0.12)'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = vista === 'catalogo' ? vista === 'catalogo' ? azulModerno : 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.05)'}
-            >
-              {vista === 'inicio' ? '📱 CATÁLOGO' : '🏠 INICIO'}
-            </button>
-          </div>
+        {/* --- ESTILOS RESPONSIVOS DEL NAVBAR PÚBLICO --- */}
+<style>{`
+  .public-nav {
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    padding: 0 5%; 
+    background-color: rgba(0,0,0,0.6); 
+    backdrop-filter: blur(20px); 
+    position: sticky; 
+    top: 0; 
+    z-index: 100; 
+    border-bottom: 1px solid rgba(255,255,255,0.08); 
+    height: 80px; 
+    box-sizing: border-box;
+  }
 
-          <div onClick={() => setVista('inicio')} style={{ cursor: 'pointer', position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
-            <TrueFocus 
-              sentence="CONTROL CEL" 
-              blurAmount={5} 
-              borderColor={azulModerno} 
-              glowColor="rgba(59, 130, 246, 0.4)" 
-              animationDuration={0.5} 
-              pauseBetweenAnimations={1} 
-            />
-          </div>
+  .nav-left-container {
+    display: flex;
+    align-items: center;
+    min-width: 120px; /* Mantiene un ancho mínimo base */
+  }
 
-          {/* BOTÓN CARRITO EN NAVBAR */}
-          {vista === 'catalogo' && (
-            <div style={{ position: 'relative' }}>
-              <button 
-                onClick={() => setMostrarCarrito(true)}
-                style={{ 
-                  backgroundColor: 'rgba(255,255,255,0.1)', 
-                  border: '1px solid rgba(255,255,255,0.2)', 
-                  color: '#fff', 
-                  padding: '10px 20px', 
-                  borderRadius: '12px', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '10px', 
-                  cursor: 'pointer',
-                  transition: 'all 0.3s'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)'}
-              >
-                <FaShoppingCart size={18} />
-                <span style={{ fontWeight: 'bold' }}>Carrito</span>
-              </button>
-              {cantidadTotal > 0 && (
-                <div style={{ position: 'absolute', top: '-8px', right: '-8px', backgroundColor: '#ef4444', color: '#fff', fontSize: '0.75rem', fontWeight: 'bold', width: '22px', height: '22px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.5)' }}>
-                  {cantidadTotal}
-                </div>
-              )}
-            </div>
-          )}
-          {vista === 'inicio' && <div style={{ width: '105px' }}></div>}
-        </nav>
+  .nav-right-spacer {
+    min-width: 120px; /* Espejo del lado izquierdo para asegurar el centrado del logo */
+  }
+
+  .btn-nav-publica {
+    background-color: rgba(255,255,255,0.05);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.15);
+    padding: 8px 18px;
+    border-radius: 12px;
+    font-weight: 800;
+    font-size: 0.8rem;
+    cursor: pointer;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+  }
+  .btn-nav-publica:hover {
+    background-color: rgba(255,255,255,0.12);
+  }
+
+  .btn-carrito-publico {
+    background-color: rgba(255,255,255,0.1); 
+    border: 1px solid rgba(255,255,255,0.2); 
+    color: #fff; 
+    padding: 10px 20px; 
+    border-radius: 12px; 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+  }
+  .btn-carrito-publico:hover {
+    background-color: rgba(255,255,255,0.2);
+  }
+
+  /* ----- AJUSTES EXCLUSIVOS PARA CELULARES ----- */
+  @media (max-width: 480px) {
+    .public-nav {
+      height: 65px !important; /* Más petisa para ganar pantalla */
+      padding: 0 15px !important;
+    }
+    
+    .nav-left-container, .nav-right-spacer {
+      min-width: 95px !important; /* Ajustamos los contenedores laterales */
+    }
+
+    .btn-nav-publica {
+      padding: 6px 10px !important;
+      font-size: 0.7rem !important;
+      letter-spacing: 0.5px !important;
+    }
+
+    .btn-carrito-publico {
+      padding: 6px 12px !important;
+      font-size: 0.7rem !important;
+      gap: 6px !important;
+    }
+
+    .logo-nav-center {
+      transform: translateX(-50%) scale(0.75) !important; /* Achica el TrueFocus ordenadamente */
+    }
+  }
+`}</style>
+
+{/* NAVBAR */}
+<nav className="public-nav">
+  
+  {/* LADO IZQUIERDO: BOTÓN DINÁMICO (INTERCAMBIA ENTRE CATÁLOGO O CARRITO) */}
+  <div className="nav-left-container">
+    {vista === 'inicio' ? (
+      <button 
+        className="btn-nav-publica"
+        onClick={() => setVista('catalogo')}
+      >
+        📱 CATÁLOGO
+      </button>
+    ) : (
+      <button 
+        className="btn-carrito-publico"
+        onClick={() => setMostrarCarrito(true)}
+      >
+        <FaShoppingCart size={16} />
+        <span style={{ fontWeight: 'bold' }}>Carrito</span>
+        {cantidadTotal > 0 && (
+          <div style={{ 
+            position: 'absolute', 
+            top: '-8px', 
+            right: '-8px', 
+            backgroundColor: '#ef4444', 
+            color: '#fff', 
+            fontSize: '0.7rem', 
+            fontWeight: 'bold', 
+            width: '20px', 
+            height: '20px', 
+            borderRadius: '50%', 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            boxShadow: '0 2px 5px rgba(0,0,0,0.5)' 
+          }}>
+            {cantidadTotal}
+          </div>
+        )}
+      </button>
+    )}
+  </div>
+
+  {/* CENTRO: LOGO INTERACTIVO CONTROL CEL */}
+  <div 
+    className="logo-nav-center"
+    onClick={() => setVista('inicio')} 
+    style={{ cursor: 'pointer', position: 'absolute', left: '50%', transform: 'translateX(-50%)', zIndex: 10 }}
+  >
+    <TrueFocus 
+      sentence="CONTROL CEL" 
+      blurAmount={5} 
+      borderColor={azulModerno} 
+      glowColor="rgba(59, 130, 246, 0.4)" 
+      animationDuration={0.5} 
+      pauseBetweenAnimations={1} 
+    />
+  </div>
+
+  {/* LADO DERECHO: ESPACIADOR SIMÉTRICO PARA SEGUIR MANTENIENDO EL LOGO CENTRADO */}
+  <div className="nav-right-spacer"></div>
+
+</nav>
 
         {/* REDES SOCIALES FLOTANTES */}
         <div style={{ position: 'fixed', bottom: '30px', left: '30px', zIndex: 3000, display: 'flex', flexDirection: 'column', gap: '15px' }}>
