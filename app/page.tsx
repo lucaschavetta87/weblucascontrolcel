@@ -21,6 +21,10 @@ interface ItemCarrito { producto: Producto; cantidad: number; }
 export default function WebControlCell() {
   const azulModerno = "#3b82f6";
 
+  // --- ESTADOS DE ENVÍO ---
+  const [metodoEnvio, setMetodoEnvio] = useState('retiro'); 
+  const [direccion, setDireccion] = useState('');
+
   // --- ESTADOS DE REPARACIÓN Y NAVEGACIÓN ---
   const [ordenBusqueda, setOrdenBusqueda] = useState('');
   const [telBusqueda, setTelBusqueda] = useState('');
@@ -116,9 +120,24 @@ export default function WebControlCell() {
 
   const finalizarCompraWhatsApp = () => {
     if (carrito.length === 0) return;
+    
     let mensaje = `Hola ControlCel! Te paso mi pedido:\n\n`;
-    carrito.forEach(item => { mensaje += `- ${item.cantidad}x ${item.producto.nombre} ($${(item.producto.precio * item.cantidad).toLocaleString('es-AR')})\n`; });
-    mensaje += `\n*Total: $${totalCarrito.toLocaleString('es-AR')}*\n\n¿Tienen disponibilidad para armar el pedido?`;
+    
+    carrito.forEach(item => { 
+      mensaje += `- ${item.cantidad}x ${item.producto.nombre} ($${(item.producto.precio * item.cantidad).toLocaleString('es-AR')})\n`; 
+    });
+    
+    mensaje += `\n*Total: $${totalCarrito.toLocaleString('es-AR')}*\n\n`;
+    
+    if (metodoEnvio === 'envio') {
+      mensaje += `*Método:* Envío a domicilio\n`;
+      mensaje += `*Dirección:* ${direccion || 'No especificada'}\n\n`;
+    } else {
+      mensaje += `*Método:* Retiro en el local\n\n`;
+    }
+    
+    mensaje += `¿Tienen disponibilidad para armar el pedido?`;
+    
     window.open(`https://wa.me/5492614603074?text=${encodeURIComponent(mensaje)}`, '_blank');
   };
 
@@ -148,10 +167,8 @@ export default function WebControlCell() {
           <CatalogoView cantidadTotal={cantidadTotal} setMostrarCarrito={setMostrarCarrito} productosFiltrados={productosFiltrados} productosPaginados={productosPaginados} busquedaTermino={busquedaTermino} setBusquedaTermino={setBusquedaTermino} categoriaActiva={categoriaActiva} setCategoriaActiva={setCategoriaActiva} paginaActual={paginaActual} setPaginaActual={setPaginaActual} totalPaginas={totalPaginas} agregarAlCarrito={agregarAlCarrito} azulModerno={azulModerno} estiloTab={estiloTab} />
         )}
 
-        {/* REVIEWS DE GOOGLE */}
-<GoogleReviews azulModerno={azulModerno} />
+        <GoogleReviews azulModerno={azulModerno} />
 
-        {/* SECCIÓN UBICACIÓN */}
         <section style={{ padding: '40px 5%', maxWidth: '1200px', margin: '0 auto', marginBottom: '60px' }}>
           <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: '35px', padding: 'clamp(20px, 5vw, 40px)', border: '1px solid rgba(255,255,255,0.1)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px', alignItems: 'center' }}>
             <div style={{ textAlign: 'center' }}>
@@ -160,7 +177,7 @@ export default function WebControlCell() {
               <p style={{ opacity: 0.8 }}>⏰ Lun a Vie: 08:30 a 18:00 (Corrido)</p>
             </div>
             <div style={{ height: '300px', borderRadius: '25px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3350.3475146950796!2d-68.8385311!3d-32.89025!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x967e09176378c909%3A0xf603f990924968!2sControl%20Cell!5e0!3m2!1ses-419!2sar!4v1713800000000" width="100%" height="100%" style={{ border: 0 }} allowFullScreen={true} loading="lazy" title="Ubicación de ControlCel"></iframe>
+              <iframe src="https://maps.google.com/maps?q=Salta%201161,%20Mendoza&t=&z=15&ie=UTF8&iwloc=&output=embed" width="100%" height="100%" style={{ border: 0 }} allowFullScreen={true} loading="lazy" title="Ubicación de ControlCel"></iframe>
             </div>
           </div>
         </section>
@@ -169,8 +186,20 @@ export default function WebControlCell() {
         <footer style={{ textAlign: 'center', padding: '40px 5%', opacity: 0.4, fontSize: '0.8rem' }}>© 2026 ControlCel - Mendoza</footer>
       </div>
 
+      {/* ACÁ ABAJO VAN LOS MODALES Y EL CARRITO DE VERDAD */}
       {mostrarCarrito && (
-        <CartSidebar carrito={carrito} setMostrarCarrito={setMostrarCarrito} modificarCantidad={modificarCantidad} totalCarrito={totalCarrito} finalizarCompraWhatsApp={finalizarCompraWhatsApp} azulModerno={azulModerno} />
+        <CartSidebar 
+          carrito={carrito} 
+          setMostrarCarrito={setMostrarCarrito} 
+          modificarCantidad={modificarCantidad} 
+          totalCarrito={totalCarrito} 
+          finalizarCompraWhatsApp={finalizarCompraWhatsApp} 
+          azulModerno={azulModerno} 
+          metodoEnvio={metodoEnvio}
+          setMetodoEnvio={setMetodoEnvio}
+          direccion={direccion}
+          setDireccion={setDireccion}
+        />
       )}
 
       {notificacion && (
