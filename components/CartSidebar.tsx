@@ -1,6 +1,7 @@
 "use client";
-import React from 'react';
+import React, { useState } from 'react';
 import { FaShoppingCart, FaTimes, FaMinus, FaPlus, FaWhatsapp, FaStore, FaMotorcycle } from 'react-icons/fa';
+import { supabase } from '../lib/supabase'; 
 
 interface Producto {
   id: number;
@@ -21,7 +22,6 @@ interface CartSidebarProps {
   totalCarrito: number;
   finalizarCompraWhatsApp: () => void; 
   azulModerno: string;
-  // 👇 Agregamos las props que vienen de WebControlCell
   metodoEnvio: string;
   setMetodoEnvio: (metodo: string) => void;
   direccion: string;
@@ -41,13 +41,48 @@ export default function CartSidebar({
   setDireccion
 }: CartSidebarProps) {
 
-  // Función para validar antes de enviar
-  const handleFinalizar = () => {
+  // --- NUEVOS ESTADOS PARA LOS DATOS DEL CLIENTE ---
+  const [nombreCliente, setNombreCliente] = useState('');
+  const [telefonoCliente, setTelefonoCliente] = useState('');
+
+  const handleFinalizar = async () => {
+    // 1. Validamos que haya puesto nombre y teléfono
+    if (nombreCliente.trim() === '' || telefonoCliente.trim() === '') {
+      alert('Por favor, ingresá tu Nombre y Teléfono.');
+      return;
+    }
+
+    // 2. Validamos la dirección si eligió envío
     if (metodoEnvio === 'envio' && direccion.trim() === '') {
       alert('Por favor, ingresá tu domicilio para el envío.');
       return;
     }
-    // Como WebControlCell ya sabe la dirección y el método, solo ejecutamos la función
+
+    try {
+      // 3. Enviamos todo a Supabase
+      const { error } = await supabase
+        .from('pedidos_web')
+        .insert([
+          { 
+            nombre: nombreCliente,         // <-- Dato nuevo
+            telefono: telefonoCliente,     // <-- Dato nuevo
+            productos: carrito, 
+            total: totalCarrito,
+            metodo_envio: metodoEnvio,
+            direccion: metodoEnvio === 'envio' ? direccion : 'Retiro en local',
+            estado: 'pendiente'
+          }
+        ]);
+
+      if (error) {
+        console.error("Error al guardar pedido en Supabase:", error);
+      } else {
+        console.log("Pedido impactado correctamente en la base de datos");
+      }
+    } catch (err) {
+      console.error("Error de conexión al guardar el pedido:", err);
+    }
+
     finalizarCompraWhatsApp();
   };
 
@@ -91,6 +126,25 @@ export default function CartSidebar({
         {carrito.length > 0 && (
           <div style={{ padding: '20px', borderTop: '1px solid rgba(255,255,255,0.1)', backgroundColor: 'rgba(0,0,0,0.2)' }}>
             
+            {/* --- SECCIÓN DE DATOS DEL CLIENTE --- */}
+            <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <span style={{ fontSize: '1rem', fontWeight: 'bold' }}>Tus datos:</span>
+              <input 
+                type="text" 
+                placeholder="Nombre y Apellido" 
+                value={nombreCliente}
+                onChange={(e) => setNombreCliente(e.target.value)}
+                style={{ width: '100%', padding: '12px', borderRadius: '10px', backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', outline: 'none', boxSizing: 'border-box' }}
+              />
+              <input 
+                type="tel" 
+                placeholder="Tu Teléfono" 
+                value={telefonoCliente}
+                onChange={(e) => setTelefonoCliente(e.target.value)}
+                style={{ width: '100%', padding: '12px', borderRadius: '10px', backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', outline: 'none', boxSizing: 'border-box' }}
+              />
+            </div>
+
             {/* --- SECCIÓN DE OPCIONES DE ENTREGA --- */}
             <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <span style={{ fontSize: '1rem', fontWeight: 'bold' }}>Opciones de entrega:</span>
@@ -109,7 +163,6 @@ export default function CartSidebar({
                 </label>
               </div>
 
-              {/* Input de dirección condicional */}
               {metodoEnvio === 'envio' && (
                 <div style={{ marginTop: '5px', animation: 'fadeIn 0.3s ease-in-out' }}>
                   <input 
@@ -122,7 +175,6 @@ export default function CartSidebar({
                 </div>
               )}
             </div>
-            {/* --- FIN SECCIÓN DE ENTREGA --- */}
 
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', fontSize: '1.2rem', fontWeight: 'bold' }}>
               <span>Total:</span>
