@@ -43,6 +43,10 @@ export default function CartSidebar({
       alert('Por favor, ingresá tu Nombre y Teléfono.');
       return;
     }
+    if (metodoEnvio === 'envio' && direccion.trim() === '') {
+      alert('Por favor, ingresá tu Dirección para el envío.');
+      return;
+    }
     try {
       const { data, error } = await supabase.from('pedidos_web').insert([{ 
         nombre: nombreCliente, telefono: telefonoCliente, productos: carrito, 
@@ -117,7 +121,40 @@ export default function CartSidebar({
             
             {!pedidoCreado ? (
               <>
-                {/* --- SECCIÓN REPARADA DE DATOS DEL CLIENTE --- */}
+                {/* SECCIÓN DE MÉTODO DE ENTREGA */}
+                <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <span style={{ fontSize: '1rem', fontWeight: 'bold', color: '#fff' }}>Forma de entrega:</span>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button 
+                      onClick={() => setMetodoEnvio('retiro')} 
+                      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.9rem', border: metodoEnvio === 'retiro' ? `2px solid ${azulModerno}` : '1px solid rgba(255,255,255,0.1)', backgroundColor: metodoEnvio === 'retiro' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(255,255,255,0.02)', color: '#fff', transition: 'all 0.2s' }}
+                    >
+                      <FaStore color={metodoEnvio === 'retiro' ? azulModerno : '#94a3b8'} /> Local
+                    </button>
+                    <button 
+                      onClick={() => setMetodoEnvio('envio')} 
+                      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.9rem', border: metodoEnvio === 'envio' ? `2px solid ${azulModerno}` : '1px solid rgba(255,255,255,0.1)', backgroundColor: metodoEnvio === 'envio' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(255,255,255,0.02)', color: '#fff', transition: 'all 0.2s' }}
+                    >
+                      <FaMotorcycle color={metodoEnvio === 'envio' ? azulModerno : '#94a3b8'} /> Domicilio
+                    </button>
+                  </div>
+                </div>
+
+                {/* CAMPO DE DIRECCIÓN DINÁMICO */}
+                {metodoEnvio === 'envio' && (
+                  <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <span style={{ fontSize: '1rem', fontWeight: 'bold', color: '#fff' }}>Dirección de envío:</span>
+                    <input 
+                      type="text" 
+                      placeholder="Calle, Número, Localidad" 
+                      value={direccion} 
+                      onChange={(e) => setDireccion(e.target.value)} 
+                      style={{ width: '100%', padding: '12px', borderRadius: '10px', backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', outline: 'none', boxSizing: 'border-box' }} 
+                    />
+                  </div>
+                )}
+
+                {/* SECCIÓN DE DATOS DEL CLIENTE */}
                 <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   <span style={{ fontSize: '1rem', fontWeight: 'bold', color: '#fff' }}>Tus datos:</span>
                   <input 
