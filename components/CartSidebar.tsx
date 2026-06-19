@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaShoppingCart, FaTimes, FaMinus, FaPlus, FaWhatsapp, FaStore, FaMotorcycle, FaCheckCircle } from 'react-icons/fa';
 import { supabase } from '../lib/supabase'; 
 
@@ -39,6 +39,20 @@ export default function CartSidebar({
   const [pasoEntrega, setPasoEntrega] = useState(false);
   const [cargandoPago, setCargandoPago] = useState(false);
 
+  // DETECCIÓN AUTOMÁTICA AL VOLVER DE MERCADO PAGO
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const status = params.get('status') || params.get('collection_status');
+      
+      // Si Mercado Pago vuelve con estado aprobado, abrimos el formulario de entrega al instante
+      if (status === 'approved') {
+        setPasoEntrega(true);
+        setMostrarCarrito(true); // Nos aseguramos de que el carrito esté abierto a la vista
+      }
+    }
+  }, [setMostrarCarrito]);
+
   const handlePagarMercadoPago = async () => {
     try {
       setCargandoPago(true);
@@ -58,7 +72,7 @@ export default function CartSidebar({
       const { init_point } = await res.json();
       
       if (init_point) {
-        // CAMBIO CLAVE: Redirección en la misma ventana para evitar bloqueos en celulares
+        // Redirección directa en la misma pestaña para que abra la app/web de MP al instante
         window.location.href = init_point;
       } else {
         alert("No se pudo generar el enlace de pago.");
@@ -136,27 +150,17 @@ export default function CartSidebar({
             </div>
             
             {!pasoEntrega ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <button 
-                  onClick={handlePagarMercadoPago} 
-                  disabled={cargandoPago}
-                  style={{ width: '100%', backgroundColor: azulModerno, color: '#fff', padding: '16px', borderRadius: '15px', border: 'none', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', transition: 'all 0.3s', opacity: cargandoPago ? 0.6 : 1 }}
-                >
-                  {cargandoPago ? 'REDIRECCIONANDO...' : 'PAGAR CON MERCADOPAGO'}
-                </button>
-
-                {/* Si el cliente se fue a MP y regresó usando el botón 'Atrás' del celu, puede declarar que ya pagó */}
-                <button 
-                  onClick={() => setPasoEntrega(true)} 
-                  style={{ width: '100%', backgroundColor: 'rgba(255,255,255,0.05)', color: '#94a3b8', padding: '12px', borderRadius: '15px', border: '1px solid rgba(255,255,255,0.1)', fontSize: '0.85rem', cursor: 'pointer' }}
-                >
-                  ¿Ya realizaste el pago? Cargar datos de entrega
-                </button>
-              </div>
+              <button 
+                onClick={handlePagarMercadoPago} 
+                disabled={cargandoPago}
+                style={{ width: '100%', backgroundColor: azulModerno, color: '#fff', padding: '16px', borderRadius: '15px', border: 'none', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', transition: 'all 0.3s', opacity: cargandoPago ? 0.6 : 1 }}
+              >
+                {cargandoPago ? 'REDIRECCIONANDO...' : 'PAGAR CON MERCADOPAGO'}
+              </button>
             ) : (
               <>
                 <div style={{ color: '#25d366', fontWeight: 'bold', marginBottom: '15px', textAlign: 'center', fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
-                  <FaCheckCircle /> ¡Compra realizada correctamente! Complete los datos de entrega:
+                  <FaCheckCircle /> Compra realizada correctamente, complete los datos de entrega:
                 </div>
 
                 {/* SECCIÓN DE MÉTODO DE ENTREGA */}
@@ -212,10 +216,6 @@ export default function CartSidebar({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <button onClick={handleEnviarWhatsAppPostPago} style={{ width: '100%', backgroundColor: '#25d366', color: '#fff', padding: '16px', borderRadius: '15px', border: 'none', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', transition: 'all 0.3s', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
                     <FaWhatsapp size={20} /> CONFIRMAR ENVÍO
-                  </button>
-                  
-                  <button onClick={() => setPasoEntrega(false)} style={{ backgroundColor: 'transparent', border: 'none', color: '#94a3b8', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}>
-                    Volver a intentar el pago
                   </button>
                 </div>
               </>
