@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { MercadoPagoConfig, Preference } from 'mercadopago';
 
-// ESTA CLAVE NUNCA DEBE SER EXPUESTA EN EL FRONTEND
+// Clave de Mercado Pago
 const client = new MercadoPagoConfig({ accessToken: 'APP_USR-3381176844530260-060510-d05fe2b52d4563444e0c8c084cdb42d0-9565196' });
 
 export async function POST(req: Request) {
@@ -16,13 +16,14 @@ export async function POST(req: Request) {
           quantity: i.cantidad,
           unit_price: Number(i.producto.precio),
         })),
+        // CONFIGURACIÓN CLAVE: Agregamos el retorno automático y las respuestas de estado
         back_urls: {
-          success: "https://controlcelmendoza.com.ar", 
-          failure: "https://controlcelmendoza.com.ar",
-          pending: "https://controlcelmendoza.com.ar",
+          success: "https://controlcelmendoza.com.ar/?status=approved", 
+          failure: "https://controlcelmendoza.com.ar/?status=failure",
+          pending: "https://controlcelmendoza.com.ar/?status=pending",
         },
-        external_reference: String(idPedido), // Esto te sirve para saber a qué pedido corresponde
-        auto_return: "approved",
+        auto_return: "approved", // Fuerza a Mercado Pago a redireccionar al instante al terminar de pagar
+        external_reference: String(idPedido), 
       },
     });
 
