@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from 'react';
-import { FaShoppingCart, FaTimes, FaMinus, FaPlus, FaWhatsapp, FaStore, FaMotorcycle } from 'react-icons/fa';
+import { FaShoppingCart, FaTimes, FaMinus, FaPlus, FaWhatsapp, FaStore, FaMotorcycle, FaCheckCircle } from 'react-icons/fa';
 import { supabase } from '../lib/supabase'; 
 
 interface Producto {
@@ -36,17 +36,20 @@ export default function CartSidebar({
 
   const [nombreCliente, setNombreCliente] = useState('');
   const [telefonoCliente, setTelefonoCliente] = useState('');
-  const [yaPago, setYaPago] = useState(false);
+  const [pasoEntrega, setPasoEntrega] = useState(false);
+  const [cargandoPago, setCargandoPago] = useState(false);
 
   const handlePagarMercadoPago = async () => {
     try {
-      // Registramos en Supabase de forma interna primero si querés
+      setCargandoPago(true);
+      // 1. Registramos en Supabase de forma interna primero
       const { data, error } = await supabase.from('pedidos_web').insert([{ 
         nombre: "Pendiente de datos", telefono: "Pendiente", productos: carrito, 
         total: totalCarrito, metodo_envio: metodoEnvio, 
         direccion: metodoEnvio === 'envio' ? direccion : 'Retiro en local', estado: 'pendiente'
       }]).select().single();
 
+      // 2. Pedimos el init_point a tu backend
       const res = await fetch('/api/pagos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -55,13 +58,15 @@ export default function CartSidebar({
       const { init_point } = await res.json();
       
       if (init_point) {
-        // Abrimos Mercado Pago en una pestaña nueva para que no pierdan la app, 
-        // y pasamos al formulario de entrega directamente.
-        window.open(init_point, '_blank');
-        setYaPago(true);
+        // CAMBIO CLAVE: Redirección en la misma ventana para evitar bloqueos en celulares
+        window.location.href = init_point;
+      } else {
+        alert("No se pudo generar el enlace de pago.");
+        setCargandoPago(false);
       }
     } catch (err) { 
       alert("Error al conectar con Mercado Pago."); 
+      setCargandoPago(false);
     }
   };
 
@@ -75,14 +80,11 @@ export default function CartSidebar({
       return;
     }
 
-    // Armamos la lista de productos para el mensaje
     const detalleProductos = carrito.map(item => `${item.producto.nombre} (x${item.cantidad})`).join(', ');
-    
     const entregaStr = metodoEnvio === 'envio' ? `Envío a domicilio: ${direccion}` : 'Retiro en local';
 
     const mensaje = `Hola ya pague ${detalleProductos}, coordinamos entrega? \n\n*Datos de entrega:*\n- Nombre: ${nombreCliente}\n- Teléfono: ${telefonoCliente}\n- Método: ${entregaStr}`;
     
-    // Cambiar por tu número real de WhatsApp si no viene configurado en finalizarCompraWhatsApp
     const urlWhatsapp = `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
     window.open(urlWhatsapp, '_blank');
   };
@@ -133,14 +135,28 @@ export default function CartSidebar({
               <span style={{ color: azulModerno }}>${totalCarrito.toLocaleString('es-AR')}</span>
             </div>
             
-            {!yaPago ? (
-              <button onClick={handlePagarMercadoPago} style={{ width: '100%', backgroundColor: azulModerno, color: '#fff', padding: '16px', borderRadius: '15px', border: 'none', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', transition: 'all 0.3s' }}>
-                PAGAR CON MERCADOPAGO
-              </button>
+            {!pasoEntrega ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <button 
+                  onClick={handlePagarMercadoPago} 
+                  disabled={cargandoPago}
+                  style={{ width: '100%', backgroundColor: azulModerno, color: '#fff', padding: '16px', borderRadius: '15px', border: 'none', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', transition: 'all 0.3s', opacity: cargandoPago ? 0.6 : 1 }}
+                >
+                  {cargandoPago ? 'REDIRECCIONANDO...' : 'PAGAR CON MERCADOPAGO'}
+                </button>
+
+                {/* Si el cliente se fue a MP y regresó usando el botón 'Atrás' del celu, puede declarar que ya pagó */}
+                <button 
+                  onClick={() => setPasoEntrega(true)} 
+                  style={{ width: '100%', backgroundColor: 'rgba(255,255,255,0.05)', color: '#94a3b8', padding: '12px', borderRadius: '15px', border: '1px solid rgba(255,255,255,0.1)', fontSize: '0.85rem', cursor: 'pointer' }}
+                >
+                  ¿Ya realizaste el pago? Cargar datos de entrega
+                </button>
+              </div>
             ) : (
               <>
-                <div style={{ color: '#25d366', fontWeight: 'bold', marginBottom: '15px', textAlign: 'center', fontSize: '0.95rem' }}>
-                  ¡Compra realizada correctamente! Complete los datos de entrega:
+                <div style={{ color: '#25d366', fontWeight: 'bold', marginBottom: '15px', textAlign: 'center', fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+                  <FaCheckCircle /> ¡Compra realizada correctamente! Complete los datos de entrega:
                 </div>
 
                 {/* SECCIÓN DE MÉTODO DE ENTREGA */}
@@ -193,9 +209,15 @@ export default function CartSidebar({
                   />
                 </div>
 
-                <button onClick={handleEnviarWhatsAppPostPago} style={{ width: '100%', backgroundColor: '#25d366', color: '#fff', padding: '16px', borderRadius: '15px', border: 'none', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', transition: 'all 0.3s', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
-                  <FaWhatsapp size={20} /> CONFIRMAR ENVÍO
-                </button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <button onClick={handleEnviarWhatsAppPostPago} style={{ width: '100%', backgroundColor: '#25d366', color: '#fff', padding: '16px', borderRadius: '15px', border: 'none', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', transition: 'all 0.3s', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
+                    <FaWhatsapp size={20} /> CONFIRMAR ENVÍO
+                  </button>
+                  
+                  <button onClick={() => setPasoEntrega(false)} style={{ backgroundColor: 'transparent', border: 'none', color: '#94a3b8', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}>
+                    Volver a intentar el pago
+                  </button>
+                </div>
               </>
             )}
           </div>
