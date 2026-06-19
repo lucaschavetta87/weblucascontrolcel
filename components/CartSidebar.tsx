@@ -36,41 +36,55 @@ export default function CartSidebar({
 
   const [nombreCliente, setNombreCliente] = useState('');
   const [telefonoCliente, setTelefonoCliente] = useState('');
-  const [pedidoCreado, setPedidoCreado] = useState<any>(null);
+  const [yaPago, setYaPago] = useState(false);
 
-  const handleRealizarPedido = async () => {
+  const handlePagarMercadoPago = async () => {
+    try {
+      // Registramos en Supabase de forma interna primero si querés
+      const { data, error } = await supabase.from('pedidos_web').insert([{ 
+        nombre: "Pendiente de datos", telefono: "Pendiente", productos: carrito, 
+        total: totalCarrito, metodo_envio: metodoEnvio, 
+        direccion: metodoEnvio === 'envio' ? direccion : 'Retiro en local', estado: 'pendiente'
+      }]).select().single();
+
+      const res = await fetch('/api/pagos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: carrito, idPedido: data?.id || 0 })
+      });
+      const { init_point } = await res.json();
+      
+      if (init_point) {
+        // Abrimos Mercado Pago en una pestaña nueva para que no pierdan la app, 
+        // y pasamos al formulario de entrega directamente.
+        window.open(init_point, '_blank');
+        setYaPago(true);
+      }
+    } catch (err) { 
+      alert("Error al conectar con Mercado Pago."); 
+    }
+  };
+
+  const handleEnviarWhatsAppPostPago = () => {
     if (nombreCliente.trim() === '' || telefonoCliente.trim() === '') {
-      alert('Por favor, ingresá tu Nombre y Teléfono.');
+      alert('Por favor, ingresá tu Nombre y Teléfono para la entrega.');
       return;
     }
     if (metodoEnvio === 'envio' && direccion.trim() === '') {
       alert('Por favor, ingresá tu Dirección para el envío.');
       return;
     }
-    try {
-      const { data, error } = await supabase.from('pedidos_web').insert([{ 
-        nombre: nombreCliente, telefono: telefonoCliente, productos: carrito, 
-        total: totalCarrito, metodo_envio: metodoEnvio, 
-        direccion: metodoEnvio === 'envio' ? direccion : 'Retiro en local', estado: 'pendiente'
-      }]).select().single();
 
-      if (error) throw error;
-      setPedidoCreado(data);
-      finalizarCompraWhatsApp();
-      alert("¡Pedido registrado! Ahora podés pagar con Mercado Pago.");
-    } catch (err) { alert("Hubo un error al registrar tu pedido."); }
-  };
+    // Armamos la lista de productos para el mensaje
+    const detalleProductos = carrito.map(item => `${item.producto.nombre} (x${item.cantidad})`).join(', ');
+    
+    const entregaStr = metodoEnvio === 'envio' ? `Envío a domicilio: ${direccion}` : 'Retiro en local';
 
-  const handlePagarMercadoPago = async () => {
-    try {
-      const res = await fetch('/api/pagos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: carrito, idPedido: pedidoCreado.id })
-      });
-      const { init_point } = await res.json();
-      if (init_point) window.location.href = init_point;
-    } catch (err) { alert("Error al conectar con Mercado Pago."); }
+    const mensaje = `Hola ya pague ${detalleProductos}, coordinamos entrega? \n\n*Datos de entrega:*\n- Nombre: ${nombreCliente}\n- Teléfono: ${telefonoCliente}\n- Método: ${entregaStr}`;
+    
+    // Cambiar por tu número real de WhatsApp si no viene configurado en finalizarCompraWhatsApp
+    const urlWhatsapp = `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
+    window.open(urlWhatsapp, '_blank');
   };
 
   return (
@@ -119,21 +133,29 @@ export default function CartSidebar({
               <span style={{ color: azulModerno }}>${totalCarrito.toLocaleString('es-AR')}</span>
             </div>
             
-            {!pedidoCreado ? (
+            {!yaPago ? (
+              <button onClick={handlePagarMercadoPago} style={{ width: '100%', backgroundColor: azulModerno, color: '#fff', padding: '16px', borderRadius: '15px', border: 'none', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', transition: 'all 0.3s' }}>
+                PAGAR CON MERCADOPAGO
+              </button>
+            ) : (
               <>
+                <div style={{ color: '#25d366', fontWeight: 'bold', marginBottom: '15px', textAlign: 'center', fontSize: '0.95rem' }}>
+                  ¡Compra realizada correctamente! Complete los datos de entrega:
+                </div>
+
                 {/* SECCIÓN DE MÉTODO DE ENTREGA */}
-                <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <span style={{ fontSize: '1rem', fontWeight: 'bold', color: '#fff' }}>Forma de entrega:</span>
+                <div style={{ marginBottom: '15px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#fff' }}>Forma de entrega:</span>
                   <div style={{ display: 'flex', gap: '10px' }}>
                     <button 
                       onClick={() => setMetodoEnvio('retiro')} 
-                      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.9rem', border: metodoEnvio === 'retiro' ? `2px solid ${azulModerno}` : '1px solid rgba(255,255,255,0.1)', backgroundColor: metodoEnvio === 'retiro' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(255,255,255,0.02)', color: '#fff', transition: 'all 0.2s' }}
+                      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem', border: metodoEnvio === 'retiro' ? `2px solid ${azulModerno}` : '1px solid rgba(255,255,255,0.1)', backgroundColor: metodoEnvio === 'retiro' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(255,255,255,0.02)', color: '#fff' }}
                     >
                       <FaStore color={metodoEnvio === 'retiro' ? azulModerno : '#94a3b8'} /> Local
                     </button>
                     <button 
                       onClick={() => setMetodoEnvio('envio')} 
-                      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.9rem', border: metodoEnvio === 'envio' ? `2px solid ${azulModerno}` : '1px solid rgba(255,255,255,0.1)', backgroundColor: metodoEnvio === 'envio' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(255,255,255,0.02)', color: '#fff', transition: 'all 0.2s' }}
+                      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem', border: metodoEnvio === 'envio' ? `2px solid ${azulModerno}` : '1px solid rgba(255,255,255,0.1)', backgroundColor: metodoEnvio === 'envio' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(255,255,255,0.02)', color: '#fff' }}
                     >
                       <FaMotorcycle color={metodoEnvio === 'envio' ? azulModerno : '#94a3b8'} /> Domicilio
                     </button>
@@ -142,8 +164,7 @@ export default function CartSidebar({
 
                 {/* CAMPO DE DIRECCIÓN DINÁMICO */}
                 {metodoEnvio === 'envio' && (
-                  <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    <span style={{ fontSize: '1rem', fontWeight: 'bold', color: '#fff' }}>Dirección de envío:</span>
+                  <div style={{ marginBottom: '15px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <input 
                       type="text" 
                       placeholder="Calle, Número, Localidad" 
@@ -156,7 +177,6 @@ export default function CartSidebar({
 
                 {/* SECCIÓN DE DATOS DEL CLIENTE */}
                 <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <span style={{ fontSize: '1rem', fontWeight: 'bold', color: '#fff' }}>Tus datos:</span>
                   <input 
                     type="text" 
                     placeholder="Nombre y Apellido" 
@@ -173,14 +193,10 @@ export default function CartSidebar({
                   />
                 </div>
 
-                <button onClick={handleRealizarPedido} style={{ width: '100%', backgroundColor: azulModerno, color: '#fff', padding: '16px', borderRadius: '15px', border: 'none', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', transition: 'all 0.3s' }}>
-                  REALIZAR PEDIDO
+                <button onClick={handleEnviarWhatsAppPostPago} style={{ width: '100%', backgroundColor: '#25d366', color: '#fff', padding: '16px', borderRadius: '15px', border: 'none', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', transition: 'all 0.3s', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
+                  <FaWhatsapp size={20} /> CONFIRMAR ENVÍO
                 </button>
               </>
-            ) : (
-              <button onClick={handlePagarMercadoPago} style={{ width: '100%', backgroundColor: '#25d366', color: '#fff', padding: '16px', borderRadius: '15px', border: 'none', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', transition: 'all 0.3s', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
-                PAGAR CON MERCADOPAGO
-              </button>
             )}
           </div>
         )}
