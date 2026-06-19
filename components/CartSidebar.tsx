@@ -108,119 +108,128 @@ export default function CartSidebar({
       <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)', cursor: 'pointer' }} onClick={() => setMostrarCarrito(false)}></div>
       
       <div style={{ position: 'relative', width: '100%', maxWidth: '400px', height: '100%', backgroundColor: '#0f172a', borderLeft: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', boxShadow: '-10px 0 30px rgba(0,0,0,0.5)', zIndex: 4001 }}>
-        <div style={{ padding: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ margin: 0, fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '10px', color: '#fff' }}>
-            <FaShoppingCart color={azulModerno} /> Mi Pedido
-          </h3>
-          <button onClick={() => setMostrarCarrito(false)} style={{ backgroundColor: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', opacity: 0.7 }}>
-            <FaTimes size={20} />
-          </button>
-        </div>
+        
+        {/* COMPONENTE INTERNO: VENTANA POST-PAGO DE ENTREGA DIRECTA */}
+        {pasoEntrega ? (
+          <div style={{ padding: '30px 20px', display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'center', boxSizing: 'border-box' }}>
+            <div style={{ textAlign: 'center', marginBottom: '25px' }}>
+              <FaCheckCircle color="#25d366" size={45} style={{ marginBottom: '10px' }} />
+              <h3 style={{ margin: '0 0 8px 0', fontSize: '1.3rem', fontWeight: 'bold', color: '#fff' }}>¡Tu pago se procesó correctamente!</h3>
+              <p style={{ margin: 0, fontSize: '0.9rem', color: '#94a3b8', lineHeight: '1.4' }}>Complete los datos de entrega para enviar los detalles directamente al WhatsApp del local.</p>
+            </div>
 
-        {/* LISTA DE PRODUCTOS */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-          {carrito.length === 0 ? (
-            <div style={{ textAlign: 'center', opacity: 0.5, marginTop: '40px', color: '#fff' }}>El carrito está vacío.</div>
-          ) : (
-            carrito.map((item) => (
-              <div key={item.producto.id} style={{ display: 'flex', gap: '15px', backgroundColor: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '15px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                <img src={item.producto.img} alt={item.producto.nombre} style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '10px' }} />
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 'bold', lineHeight: '1.2', color: '#fff' }}>{item.producto.nombre}</div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
-                    <span style={{ color: azulModerno, fontWeight: 'bold' }}>${(item.producto.precio * item.cantidad).toLocaleString('es-AR')}</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: '8px', padding: '4px' }}>
-                      <button onClick={() => modificarCantidad(item.producto.id, -1)} style={{ backgroundColor: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', padding: '4px' }}><FaMinus size={10} /></button>
-                      <span style={{ fontSize: '0.85rem', width: '15px', textAlign: 'center', color: '#fff' }}>{item.cantidad}</span>
-                      <button onClick={() => modificarCantidad(item.producto.id, 1)} style={{ backgroundColor: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', padding: '4px' }}><FaPlus size={10} /></button>
+            {/* SECCIÓN DE MÉTODO DE ENTREGA */}
+            <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#fff' }}>Forma de entrega:</span>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button 
+                  onClick={() => setMetodoEnvio('retiro')} 
+                  style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.9rem', border: metodoEnvio === 'retiro' ? `2px solid ${azulModerno}` : '1px solid rgba(255,255,255,0.1)', backgroundColor: metodoEnvio === 'retiro' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(255,255,255,0.02)', color: '#fff' }}
+                >
+                  <FaStore color={metodoEnvio === 'retiro' ? azulModerno : '#94a3b8'} /> Local
+                </button>
+                <button 
+                  onClick={() => setMetodoEnvio('envio')} 
+                  style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.9rem', border: metodoEnvio === 'envio' ? `2px solid ${azulModerno}` : '1px solid rgba(255,255,255,0.1)', backgroundColor: metodoEnvio === 'envio' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(255,255,255,0.02)', color: '#fff' }}
+                >
+                  <FaMotorcycle color={metodoEnvio === 'envio' ? azulModerno : '#94a3b8'} /> Domicilio
+                </button>
+              </div>
+            </div>
+
+            {/* CAMPO DE DIRECCIÓN DINÁMICO */}
+            {metodoEnvio === 'envio' && (
+              <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#fff' }}>Dirección de domicilio:</span>
+                <input 
+                  type="text" 
+                  placeholder="Calle, Número, Localidad" 
+                  value={direccion} 
+                  onChange={(e) => setDireccion(e.target.value)} 
+                  style={{ width: '100%', padding: '12px', borderRadius: '12px', backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', outline: 'none', boxSizing: 'border-box' }} 
+                />
+              </div>
+            )}
+
+            {/* SECCIÓN DE DATOS DEL CLIENTE */}
+            <div style={{ marginBottom: '30px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#fff' }}>Tus datos de contacto:</span>
+                <input 
+                  type="text" 
+                  placeholder="Nombre y Apellido" 
+                  value={nombreCliente} 
+                  onChange={(e) => setNombreCliente(e.target.value)} 
+                  style={{ width: '100%', padding: '12px', borderRadius: '12px', backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', outline: 'none', boxSizing: 'border-box' }} 
+                />
+              </div>
+              <input 
+                type="tel" 
+                placeholder="Número de Teléfono" 
+                value={telefonoCliente} 
+                onChange={(e) => setTelefonoCliente(e.target.value)} 
+                style={{ width: '100%', padding: '12px', borderRadius: '12px', backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', outline: 'none', boxSizing: 'border-box' }} 
+              />
+            </div>
+
+            <button onClick={handleEnviarWhatsAppPostPago} style={{ width: '100%', backgroundColor: '#25d366', color: '#fff', padding: '16px', borderRadius: '16px', border: 'none', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', transition: 'all 0.3s', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
+              <FaWhatsapp size={22} /> CONFIRMAR Y ENVIAR AL LOCAL
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* CARRITO CONVENCIONAL DE COMPRA */}
+            <div style={{ padding: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '10px', color: '#fff' }}>
+                <FaShoppingCart color={azulModerno} /> Mi Pedido
+              </h3>
+              <button onClick={() => setMostrarCarrito(false)} style={{ backgroundColor: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', opacity: 0.7 }}>
+                <FaTimes size={20} />
+              </button>
+            </div>
+
+            {/* LISTA DE PRODUCTOS */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              {carrito.length === 0 ? (
+                <div style={{ textAlign: 'center', opacity: 0.5, marginTop: '40px', color: '#fff' }}>El carrito está vacío.</div>
+              ) : (
+                carrito.map((item) => (
+                  <div key={item.producto.id} style={{ display: 'flex', gap: '15px', backgroundColor: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '15px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <img src={item.producto.img} alt={item.producto.nombre} style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '10px' }} />
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <div style={{ fontSize: '0.9rem', fontWeight: 'bold', lineHeight: '1.2', color: '#fff' }}>{item.producto.nombre}</div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
+                        <span style={{ color: azulModerno, fontWeight: 'bold' }}>${(item.producto.precio * item.cantidad).toLocaleString('es-AR')}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: '8px', padding: '4px' }}>
+                          <button onClick={() => modificarCantidad(item.producto.id, -1)} style={{ backgroundColor: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', padding: '4px' }}><FaMinus size={10} /></button>
+                          <span style={{ fontSize: '0.85rem', width: '15px', textAlign: 'center', color: '#fff' }}>{item.cantidad}</span>
+                          <button onClick={() => modificarCantidad(item.producto.id, 1)} style={{ backgroundColor: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', padding: '4px' }}><FaPlus size={10} /></button>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* TOTAL Y BOTONES */}
-        {carrito.length > 0 && (
-          <div style={{ padding: '20px', borderTop: '1px solid rgba(255,255,255,0.1)', backgroundColor: 'rgba(0,0,0,0.2)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', fontSize: '1.2rem', fontWeight: 'bold', color: '#fff' }}>
-              <span>Total:</span>
-              <span style={{ color: azulModerno }}>${totalCarrito.toLocaleString('es-AR')}</span>
+                ))
+              )}
             </div>
-            
-            {!pasoEntrega ? (
-              <button 
-                onClick={handlePagarMercadoPago} 
-                disabled={cargandoPago}
-                style={{ width: '100%', backgroundColor: azulModerno, color: '#fff', padding: '16px', borderRadius: '15px', border: 'none', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', transition: 'all 0.3s', opacity: cargandoPago ? 0.6 : 1 }}
-              >
-                {cargandoPago ? 'REDIRECCIONANDO...' : 'PAGAR CON MERCADOPAGO'}
-              </button>
-            ) : (
-              <>
-                <div style={{ color: '#25d366', fontWeight: 'bold', marginBottom: '15px', textAlign: 'center', fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
-                  <FaCheckCircle /> Compra realizada correctamente, complete los datos de entrega:
-                </div>
 
-                {/* SECCIÓN DE MÉTODO DE ENTREGA */}
-                <div style={{ marginBottom: '15px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#fff' }}>Forma de entrega:</span>
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <button 
-                      onClick={() => setMetodoEnvio('retiro')} 
-                      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem', border: metodoEnvio === 'retiro' ? `2px solid ${azulModerno}` : '1px solid rgba(255,255,255,0.1)', backgroundColor: metodoEnvio === 'retiro' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(255,255,255,0.02)', color: '#fff' }}
-                    >
-                      <FaStore color={metodoEnvio === 'retiro' ? azulModerno : '#94a3b8'} /> Local
-                    </button>
-                    <button 
-                      onClick={() => setMetodoEnvio('envio')} 
-                      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem', border: metodoEnvio === 'envio' ? `2px solid ${azulModerno}` : '1px solid rgba(255,255,255,0.1)', backgroundColor: metodoEnvio === 'envio' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(255,255,255,0.02)', color: '#fff' }}
-                    >
-                      <FaMotorcycle color={metodoEnvio === 'envio' ? azulModerno : '#94a3b8'} /> Domicilio
-                    </button>
-                  </div>
+            {/* TOTAL Y BOTÓN DE MERCADO PAGO */}
+            {carrito.length > 0 && (
+              <div style={{ padding: '20px', borderTop: '1px solid rgba(255,255,255,0.1)', backgroundColor: 'rgba(0,0,0,0.2)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', fontSize: '1.2rem', fontWeight: 'bold', color: '#fff' }}>
+                  <span>Total:</span>
+                  <span style={{ color: azulModerno }}>${totalCarrito.toLocaleString('es-AR')}</span>
                 </div>
-
-                {/* CAMPO DE DIRECCIÓN DINÁMICO */}
-                {metodoEnvio === 'envio' && (
-                  <div style={{ marginBottom: '15px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <input 
-                      type="text" 
-                      placeholder="Calle, Número, Localidad" 
-                      value={direccion} 
-                      onChange={(e) => setDireccion(e.target.value)} 
-                      style={{ width: '100%', padding: '12px', borderRadius: '10px', backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', outline: 'none', boxSizing: 'border-box' }} 
-                    />
-                  </div>
-                )}
-
-                {/* SECCIÓN DE DATOS DEL CLIENTE */}
-                <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <input 
-                    type="text" 
-                    placeholder="Nombre y Apellido" 
-                    value={nombreCliente} 
-                    onChange={(e) => setNombreCliente(e.target.value)} 
-                    style={{ width: '100%', padding: '12px', borderRadius: '10px', backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', outline: 'none', boxSizing: 'border-box' }} 
-                  />
-                  <input 
-                    type="tel" 
-                    placeholder="Tu Teléfono" 
-                    value={telefonoCliente} 
-                    onChange={(e) => setTelefonoCliente(e.target.value)} 
-                    style={{ width: '100%', padding: '12px', borderRadius: '10px', backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', outline: 'none', boxSizing: 'border-box' }} 
-                  />
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <button onClick={handleEnviarWhatsAppPostPago} style={{ width: '100%', backgroundColor: '#25d366', color: '#fff', padding: '16px', borderRadius: '15px', border: 'none', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', transition: 'all 0.3s', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
-                    <FaWhatsapp size={20} /> CONFIRMAR ENVÍO
-                  </button>
-                </div>
-              </>
+                
+                <button 
+                  onClick={handlePagarMercadoPago} 
+                  disabled={cargandoPago}
+                  style={{ width: '100%', backgroundColor: azulModerno, color: '#fff', padding: '16px', borderRadius: '15px', border: 'none', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', transition: 'all 0.3s', opacity: cargandoPago ? 0.6 : 1 }}
+                >
+                  {cargandoPago ? 'REDIRECCIONANDO...' : 'PAGAR CON MERCADOPAGO'}
+                </button>
+              </div>
             )}
-          </div>
+          </>
         )}
       </div>
     </div>
