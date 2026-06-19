@@ -45,10 +45,10 @@ export default function CartSidebar({
       const params = new URLSearchParams(window.location.search);
       const status = params.get('status') || params.get('collection_status');
       
-      // Si Mercado Pago vuelve con estado aprobado, abrimos el formulario de entrega al instante
+      // Si el estado es aprobado, salta directo a rellenar los datos de entrega
       if (status === 'approved') {
         setPasoEntrega(true);
-        setMostrarCarrito(true); // Nos aseguramos de que el carrito esté abierto a la vista
+        setMostrarCarrito(true); 
       }
     }
   }, [setMostrarCarrito]);
@@ -56,14 +56,14 @@ export default function CartSidebar({
   const handlePagarMercadoPago = async () => {
     try {
       setCargandoPago(true);
-      // 1. Registramos en Supabase de forma interna primero
+      // 1. Registramos el inicio de compra en Supabase de forma interna
       const { data, error } = await supabase.from('pedidos_web').insert([{ 
         nombre: "Pendiente de datos", telefono: "Pendiente", productos: carrito, 
         total: totalCarrito, metodo_envio: metodoEnvio, 
         direccion: metodoEnvio === 'envio' ? direccion : 'Retiro en local', estado: 'pendiente'
       }]).select().single();
 
-      // 2. Pedimos el init_point a tu backend
+      // 2. Solicitamos el punto de inicio de Mercado Pago
       const res = await fetch('/api/pagos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -72,7 +72,7 @@ export default function CartSidebar({
       const { init_point } = await res.json();
       
       if (init_point) {
-        // Redirección directa en la misma pestaña para que abra la app/web de MP al instante
+        // Redirección directa para evitar bloqueos de pop-ups en móviles
         window.location.href = init_point;
       } else {
         alert("No se pudo generar el enlace de pago.");
