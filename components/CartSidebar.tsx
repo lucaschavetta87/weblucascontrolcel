@@ -329,7 +329,7 @@ export default function CartSidebar({
                   onClick={handlePagarMercadoPago}
                   disabled={cargandoPago}
                   style={{
-                    width: '100%', backgroundColor: azulModerno, color: '#fff',
+                    width: '100%', backgroundColor: '#f0dd0d', color: '#0a0a0a',
                     padding: '15px', borderRadius: '13px', border: 'none',
                     fontWeight: 800, fontSize: '0.95rem', cursor: cargandoPago ? 'not-allowed' : 'pointer',
                     opacity: cargandoPago ? 0.6 : 1, transition: 'all 0.25s',
