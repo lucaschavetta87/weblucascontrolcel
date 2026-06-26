@@ -52,8 +52,8 @@ export default function CartSidebar({
       const status = params.get('status') || params.get('collection_status');
 
       if (status === 'approved') {
-        // Pago aprobado → redirigir al componente CerrarVenta
-        window.location.href = '/cerrar-venta';
+        // Al ser aprobado, ocultamos este sidebar para dejar ver el modal de CerrarVenta
+        setMostrarCarrito(false);
       } else if (status && status !== 'approved') {
         // Pago fallido o pendiente → volver al carrito con sidebar abierto
         setPasoEntrega(false);

@@ -7,14 +7,13 @@ import WhatsAppChat from '../components/WhatsAppChat';
 import { FaCheckCircle } from 'react-icons/fa';
 import GoogleReviews from '../components/GoogleReviews';
 
-// page.tsx
-
 // Importación de los nuevos componentes modulares
 import Navbar from '../components/Navbar';
 import FloatingSocials from '../components/FloatingSocials';
 import InicioView from '../components/InicioView';
 import CatalogoView from '../components/CatalogoView';
 import CartSidebar from '../components/CartSidebar';
+import CerrarVenta from '../components/cerrarventa'; 
 
 interface Producto { id: number; nombre: string; precio: number; img: string; categoria: string; }
 interface EquipoData { nombre: string; equipo: string; estado_orden: string; falla: string; fecha: string; }
@@ -203,6 +202,16 @@ export default function WebControlCell() {
           setDireccion={setDireccion}
         />
       )}
+
+      {/* COMPONENTE CERRAR VENTA DETECTANDO PAGO EXITOSO */}
+      <CerrarVenta 
+        carrito={carrito}
+        azulModerno={azulModerno}
+        metodoEnvio={metodoEnvio}
+        setMetodoEnvio={setMetodoEnvio}
+        direccion={direccion}
+        setDireccion={setDireccion}
+      />
 
       {notificacion && (
         <div style={{ position: 'fixed', top: '95px', right: '25px', backgroundColor: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(15px)', border: `1px solid ${azulModerno}`, borderRadius: '16px', padding: '12px 24px', color: '#fff', display: 'flex', alignItems: 'center', gap: '12px', zIndex: 5000, boxShadow: `0 10px 25px rgba(59, 130, 246, 0.25)`, fontWeight: '600', fontSize: '0.9rem' }}>
