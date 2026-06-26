@@ -65,6 +65,12 @@ export default function CartSidebar({
   const handlePagarMercadoPago = async () => {
     try {
       setCargandoPago(true);
+
+      // GUARDAR EL CARRITO PARA RECUPERARLO DESPUÉS DEL PAGO
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('carrito_respaldo', JSON.stringify(carrito));
+      }
+
       const { data, error } = await supabase.from('pedidos_web').insert([{
         nombre: "Pendiente de datos",
         telefono: "Pendiente",

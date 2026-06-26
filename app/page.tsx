@@ -13,7 +13,7 @@ import FloatingSocials from '../components/FloatingSocials';
 import InicioView from '../components/InicioView';
 import CatalogoView from '../components/CatalogoView';
 import CartSidebar from '../components/CartSidebar';
-import CerrarVenta from '../components/cerrarventa'; 
+import CerrarVenta from '../components/cerrarventa';
 
 interface Producto { id: number; nombre: string; precio: number; img: string; categoria: string; }
 interface EquipoData { nombre: string; equipo: string; estado_orden: string; falla: string; fecha: string; }
@@ -43,6 +43,22 @@ export default function WebControlCell() {
   const [notificacion, setNotificacion] = useState<string | null>(null);
   const [paginaActual, setPaginaActual] = useState(1);
   const productosPorPagina = 8;
+
+  // RECUPERAR RESPALDO DEL CARRITO SI VOLVEMOS DE MERCADO PAGO APROBADO
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const status = params.get('status') || params.get('collection_status');
+      if (status === 'approved') {
+        const respaldo = localStorage.getItem('carrito_respaldo');
+        if (respaldo) {
+          setCarrito(JSON.parse(respaldo));
+          // Opcional: limpiar una vez restaurado para no ensuciar la memoria
+          localStorage.removeItem('carrito_respaldo');
+        }
+      }
+    }
+  }, []);
 
   // --- TRAER STOCK DE SUPABASE ---
   const cargarProductosNube = async () => {
@@ -203,7 +219,6 @@ export default function WebControlCell() {
         />
       )}
 
-      {/* COMPONENTE CERRAR VENTA DETECTANDO PAGO EXITOSO */}
       <CerrarVenta 
         carrito={carrito}
         azulModerno={azulModerno}
