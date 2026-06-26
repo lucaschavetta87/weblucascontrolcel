@@ -7,6 +7,8 @@ import WhatsAppChat from '../components/WhatsAppChat';
 import { FaCheckCircle } from 'react-icons/fa';
 import GoogleReviews from '../components/GoogleReviews';
 
+// page.tsx
+
 // Importación de los nuevos componentes modulares
 import Navbar from '../components/Navbar';
 import FloatingSocials from '../components/FloatingSocials';
